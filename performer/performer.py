@@ -38,12 +38,12 @@ class Performer:
         self.connect_pool = connCls()
         self.player = playerCls()
         self.init_env()
-        self.time_dleta = inquirer.text(
+        self.time_dleta = int(inquirer.text(
             message="Enter the time delta (seconds):",
             default='1',
             validate=lambda x: x.isdecimal() and float(x) > 0,
             invalid_message='Invalid time delta!!!'
-        ).execute()
+        ).execute())
     
     def init_env(self):
         # set the path

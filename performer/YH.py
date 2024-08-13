@@ -5,7 +5,9 @@ class MultiYHPerformer(Performer):
     '''多人御魂'''
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
+        self.img_path = 'wanted/'
     
     def main_step(self):
         target_list = ['refuse.jpg','yys_begin.jpg', 'yys_jieshu.jpg', 'yys_jixu.jpg']
+        target_list = [self.img_path + i for i in target_list]
         self.find_and_touch(target_list)

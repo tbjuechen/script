@@ -44,7 +44,7 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
 
 # create formatter with datefmt and add it to the handler
-formatter = ColoredFormatter(datefmt='%Y-%m-%d %H:%M:%S')
+formatter = ColoredFormatter(datefmt='%H:%M:%S')
 console_handler.setFormatter(formatter)
 
 # add the handler to the logger

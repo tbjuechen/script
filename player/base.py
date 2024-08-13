@@ -16,7 +16,7 @@ class BasePlayer(ABC):
     acc : float
         The accuracy of the player model
     '''
-    def __init__(self, acc:float, **kwargs):
+    def __init__(self, acc:float=0.8, **kwargs):
         self.acc = acc
 
     @abstractmethod

@@ -8,19 +8,17 @@ License: MIT
 
 from logger import logger
 
-from connector import ConnectorPool
-from player import CVPlayer
+from performer import scripts
+from performer.performer import Performer
 
-connect_pool = ConnectorPool(logger)
-connect_pool.add_connector('Mumu', '127.0.0.1', 16384).connect()
-player = CVPlayer()
-while True:
-    current_connector = connect_pool.get_current_connector()
-    screenshot = current_connector.screen_shot()
-    target_list = ['wanted\\refuse.jpg','wanted\\yyh_begin.jpg', 'wanted\\yys_jieshu.jpg', 'wanted\\yys_jixu.jpg']
-    for target in target_list:
-        location = player.locate(target, screenshot)
-        if location:
-            logger.info(f'Found {target} at {location}')
-            current_connector.touch(*location)
+from InquirerPy import inquirer
+from InquirerPy.base.control import Choice
+
+performer:Performer = inquirer.select(
+    message="Select a script",
+    choices=[Choice(value=script,name=script.description) for script in scripts]
+).execute()(logger=logger)
+
+performer.run()
+
 

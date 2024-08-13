@@ -164,3 +164,4 @@ test.*
 /cache/
 
 main.exe
+*.zip

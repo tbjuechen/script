@@ -103,7 +103,7 @@ class AdbConnector(AdbDeviceTcp, BaseConnector):
         self.logger.debug(f'try to execute shell command: {cmd}')
         try:
             result = super().shell(cmd)
-            self.logger.info(f'executed shell command: {cmd}')
+            self.logger.debug(f'executed shell command: {cmd}')
             return result
         except Exception as e:
             self.logger.error(type(e).__name__ + ': ' + str(e))

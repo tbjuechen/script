@@ -37,7 +37,7 @@ class ColoredFormatter(logging.Formatter):
 
 # create logger with 'logger'
 logger = logging.getLogger('logger')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # create console handler and set level to debug
 console_handler = logging.StreamHandler()

@@ -10,10 +10,13 @@ from logger import logger
 
 from performer import scripts
 from performer.performer import Performer
+from _version import __description__
 
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
 
+
+print(__description__)
 performer:Performer = inquirer.select(
     message="Select a script",
     choices=[Choice(value=script,name=script.description) for script in scripts]

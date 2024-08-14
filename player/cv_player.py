@@ -80,7 +80,7 @@ class CVPlayer(BasePlayer):
                 p2: tuple[int,int] = x + target_w, y + target_h
                 marks.append(((x, y), p2))
         
-        self.logger.info(f'Found {len(positon)} target(s)')
+        self.logger.info(f'Found {len(positon)} target(s) of {target}')
 
         if debug:
             self.logger.debug(f'Found {len(positon)} target(s)  ' + ' '.join([f'{i}: {mark}' for i, mark in enumerate(positon)]))

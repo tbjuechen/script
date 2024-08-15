@@ -54,6 +54,7 @@ def get_file_remote(url:str, save_path:str) -> None:
     '''
     warnings.filterwarnings('ignore', module='urllib3')
     response = requests.get(url, stream=True, verify=False)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     with open(save_path, 'wb') as file:
         for chunk in response.iter_content(chunk_size=4096):
             file.write(chunk)

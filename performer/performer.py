@@ -16,6 +16,7 @@ from connector.connector.base import BaseConnector
 from player.base import BasePlayer
 from player import CVPlayer
 from .utils import is_valid_ip
+from . import loader
 
 from InquirerPy import inquirer
 
@@ -38,6 +39,7 @@ class Performer:
         self.connect_pool = connCls()
         self.player = playerCls()
         self.init_env()
+        self.init_src()
         self.time_dleta = int(inquirer.text(
             message="Enter the time delta (seconds):",
             default='1',
@@ -112,3 +114,12 @@ class Performer:
             self.main_step()
             self.logger.debug(f'Sleep for {self.time_dleta} seconds')
             time.sleep(self.time_dleta)
+
+    def init_src(self) -> None:
+        '''Init the source
+        '''
+        self.logger.info('Init the source')
+        if 'target_list' in self.__dict__.keys():
+            for target in self.target_list:
+                loader.check_local_file(target)
+            self.target_list = [os.path.join(self.img_path, i) for i in self.target_list]

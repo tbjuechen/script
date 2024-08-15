@@ -19,15 +19,15 @@ class ColoredFormatter(logging.Formatter):
     }
     RESET = '\033[0m'
     
-    MSG_FORMAT = '%(asctime)s - %(module)s - %(message)s'
+    MSG_FORMAT = lambda t:f'%(asctime)s {t} %(module)s - %(message)s'
 
     # make sure the log level is in the right color and width
     FORMATS = {
-        logging.DEBUG: COLORS['DEBUG'] + '[DEBUG]    ' + RESET + MSG_FORMAT,
-        logging.INFO: COLORS['INFO'] + '[INFO]     ' + RESET + MSG_FORMAT,
-        logging.WARNING: COLORS['WARNING'] + '[WARNING]  ' + RESET + MSG_FORMAT,
-        logging.ERROR: COLORS['ERROR'] + '[ERROR]    ' + RESET + MSG_FORMAT,
-        logging.CRITICAL: COLORS['CRITICAL'] + '[CRITICAL] ' + RESET + MSG_FORMAT
+        logging.DEBUG: MSG_FORMAT(COLORS['DEBUG'] + '  [DEBUG]  ' + RESET),
+        logging.INFO: MSG_FORMAT(COLORS['INFO'] + '  [INFO]   ' + RESET),
+        logging.WARNING: MSG_FORMAT(COLORS['WARNING'] + ' [WARNING] ' + RESET),
+        logging.ERROR: MSG_FORMAT(COLORS['ERROR'] + '  [ERROR]  ' + RESET),
+        logging.CRITICAL: MSG_FORMAT(COLORS['CRITICAL'] + '[CRITICAL] ' + RESET)
     }
     
     def format(self, record):

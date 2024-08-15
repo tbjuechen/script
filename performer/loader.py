@@ -104,3 +104,17 @@ def check_local_file(file_name:str)->bool:
         logger.info(f'File {file_name} is not the same as the remote file, downloading...')
         get_file_remote(remote_url, local_path)
         return False
+
+def check_remote_version():
+    '''check the remote version of the wanted files
+
+    Returns
+    -------
+    bool
+        the version on the remote server
+    '''
+    remote_url = urljoin(REMOTE_ROOT, 'metadata.json')
+    warnings.filterwarnings('ignore', module='urllib3')
+    response = requests.get(remote_url, verify=False)
+    remote_metadata = response.json()
+    return remote_metadata['version']

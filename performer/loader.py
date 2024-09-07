@@ -15,7 +15,7 @@ from logging import getLogger
 
 logger = getLogger('logger')
 
-REMOTE_ROOT = 'https://8.130.141.36:11000/'
+REMOTE_ROOT = 'https://raw.githubusercontent.com/tbjuechen/script/main/'
 
 def get_file_hash_remote(url:str) -> str:
     '''get the file hash from remote server

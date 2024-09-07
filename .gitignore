@@ -165,3 +165,5 @@ test.*
 
 main.exe
 *.zip
+
+release/

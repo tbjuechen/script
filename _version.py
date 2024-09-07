@@ -2,12 +2,13 @@ __version__ :str = "v1.1.0"
 __author__:str = "tbjuechen <1324374092@qq.com>"
 __license__:str = "MIT"
 __date__:str = "2024-08-14"
-__description__:str = f'''
-+---------------------------------------------+
-|  阴阳师自动化脚本工具 {__version__}                |
-|  游戏版本: 1.8.2.1613621 (sp烟烟罗)         |
-+---------------------------------------------+
-'''
+__description__:list[str] = [f'阴阳师自动化脚本工具 {__version__}',
+                             '游戏版本: 1.8.2.1613621 (sp烟烟罗)',
+                             f'作者: {__author__}']
+
+from util import format_output_info
+
+__description__ = format_output_info(__description__, 50)
 
 from performer import loader
 from logger import logger

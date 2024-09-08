@@ -167,3 +167,5 @@ main.exe
 *.zip
 
 release/
+
+tools/

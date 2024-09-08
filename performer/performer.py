@@ -8,7 +8,7 @@ License: MIT
 import os
 import time
 from logging import Logger
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import Type, List
 
 from connector import ConnectorPool
@@ -20,7 +20,7 @@ from . import loader
 
 from InquirerPy import inquirer
 
-class Performer:
+class Performer(ABC):
     '''Performer class
 
     Attributes

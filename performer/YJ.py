@@ -7,3 +7,6 @@ class YJExpPerformer(Performer):
         self.img_path = 'wanted/'
         self.target_list = ['refuse.jpg','yj_exp_begin.jpg', 'yys_jieshu.jpg', 'yys_jixu.jpg']
         super().__init__(**kwargs)
+
+    def main_step(self):
+        self.find_and_touch(self.target_list)

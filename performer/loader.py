@@ -7,15 +7,16 @@ License: MIT
 '''
 
 import os
-import requests
 import hashlib
 import warnings
+import requests
 from urllib.parse import urljoin
 from logging import getLogger
 
+
 logger = getLogger('logger')
 
-REMOTE_ROOT = 'https://raw.githubusercontent.com/tbjuechen/script/main/'
+REMOTE_ROOT = 'https://185.199.108.133/tbjuechen/script/main/'
 
 def get_file_hash_remote(url:str) -> str:
     '''get the file hash from remote server
@@ -32,7 +33,7 @@ def get_file_hash_remote(url:str) -> str:
     '''
     hash_md5 = hashlib.md5()
     warnings.filterwarnings('ignore', module='urllib3')
-    response = requests.get(url, stream=True, verify=False)
+    response = requests.get(url, stream=True, verify=False, headers={'host':'raw.githubusercontent.com'})
     for chunk in response.iter_content(chunk_size=4096):
         hash_md5.update(chunk)
     logger.debug(f'Get hash from remote file: {url}, hash: {hash_md5.hexdigest()}')
@@ -53,7 +54,7 @@ def get_file_remote(url:str, save_path:str) -> None:
     None
     '''
     warnings.filterwarnings('ignore', module='urllib3')
-    response = requests.get(url, stream=True, verify=False)
+    response = requests.get(url, stream=True, verify=False, headers={'host':'raw.githubusercontent.com'})
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     with open(save_path, 'wb') as file:
         for chunk in response.iter_content(chunk_size=4096):
@@ -116,6 +117,6 @@ def check_remote_version():
     '''
     remote_url = urljoin(REMOTE_ROOT, 'metadata.json')
     warnings.filterwarnings('ignore', module='urllib3')
-    response = requests.get(remote_url, verify=False)
+    response = requests.get(remote_url, verify=False, headers={'host':'raw.githubusercontent.com'})
     remote_metadata = response.json()
     return remote_metadata['version']

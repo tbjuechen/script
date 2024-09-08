@@ -1,4 +1,4 @@
-__version__ :str = "v1.2.0"
+__version__ :str = "v1.2.0b"
 __author__:str = "tbjuechen <1324374092@qq.com>"
 __license__:str = "MIT"
 __date__:str = "2024-09-08"

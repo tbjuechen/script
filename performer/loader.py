@@ -33,7 +33,7 @@ def get_file_hash_remote(url:str) -> str:
     '''
     hash_md5 = hashlib.md5()
     warnings.filterwarnings('ignore', module='urllib3')
-    response = requests.get(url, stream=True, verify=False, headers={'host':'raw.githubusercontent.com'})
+    response = requests.get(url, stream=True, verify=False, headers={'host':'raw.githubusercontent.com'}, timeout=5)
     for chunk in response.iter_content(chunk_size=4096):
         hash_md5.update(chunk)
     logger.debug(f'Get hash from remote file: {url}, hash: {hash_md5.hexdigest()}')
@@ -54,7 +54,7 @@ def get_file_remote(url:str, save_path:str) -> None:
     None
     '''
     warnings.filterwarnings('ignore', module='urllib3')
-    response = requests.get(url, stream=True, verify=False, headers={'host':'raw.githubusercontent.com'})
+    response = requests.get(url, stream=True, verify=False, headers={'host':'raw.githubusercontent.com'}, timeout=5)
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     with open(save_path, 'wb') as file:
         for chunk in response.iter_content(chunk_size=4096):
@@ -117,6 +117,6 @@ def check_remote_version():
     '''
     remote_url = urljoin(REMOTE_ROOT, 'metadata.json')
     warnings.filterwarnings('ignore', module='urllib3')
-    response = requests.get(remote_url, verify=False, headers={'host':'raw.githubusercontent.com'})
+    response = requests.get(remote_url,verify=False, headers={'host':'raw.githubusercontent.com'}, timeout=5)
     remote_metadata = response.json()
     return remote_metadata['version']

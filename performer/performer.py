@@ -34,16 +34,18 @@ class Performer(ABC):
     def __init__(self,
                  logger:Logger, 
                  connCls:Type[ConnectorPool]=ConnectorPool, 
-                 playerCls:Type[BasePlayer]=CVPlayer) -> None:
+                 playerCls:Type[BasePlayer]=CVPlayer,
+                 online:bool=True) -> None:
         self.logger = logger
         self.connect_pool = connCls()
         self.player = playerCls()
+        self.online = online
         self.init_env()
         self.init_src()
         self.time_dleta = int(inquirer.text(
             message="Enter the time delta (seconds):",
             default='1',
-            validate=lambda x: x.isdecimal() and float(x) > 0,
+            validate=lambda x: x.isdecimal() and float(x) >= 0,
             invalid_message='Invalid time delta!!!'
         ).execute())
     
@@ -120,6 +122,7 @@ class Performer(ABC):
         '''
         self.logger.info('Init the source')
         if 'target_list' in self.__dict__.keys():
-            for target in self.target_list:
-                loader.check_local_file(target)
+            if self.online:
+                for target in self.target_list:
+                    loader.check_local_file(target)
             self.target_list = [os.path.join(self.img_path, i) for i in self.target_list]

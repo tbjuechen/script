@@ -4,7 +4,7 @@ class ActivityPerformer(Performer):
     '''
     活动爬塔副本
     '''
-    description = '活动爬塔副本'
+    description = '活动爬塔副本 999~'
     def __init__(self,**kwargs):
         self.img_path = 'wanted/'
         self.target_list = ['refuse.jpg','active_begin.jpg', 'yys_jixu.jpg', 'yys_jieshu.jpg']

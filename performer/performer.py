@@ -48,6 +48,9 @@ class Performer(ABC):
             validate=lambda x: x.isdecimal() and float(x) >= 0,
             invalid_message='Invalid time delta!!!'
         ).execute())
+
+        # runtime variables
+        self.last_operation = None
     
     def init_env(self):
         # set the path
@@ -101,6 +104,7 @@ class Performer(ABC):
             if location:
                 self.logger.info(f'Found {target} at {location}')
                 connector.touch(*location)
+                self.last_operation = Operation('touch')
 
     @abstractmethod
     def main_step(self):
@@ -116,6 +120,7 @@ class Performer(ABC):
             self.main_step()
             self.logger.debug(f'Sleep for {self.time_dleta} seconds')
             time.sleep(self.time_dleta)
+            self.check_endless_loop()
 
     def init_src(self) -> None:
         '''Init the source
@@ -126,3 +131,24 @@ class Performer(ABC):
                 for target in self.target_list:
                     loader.check_local_file(target)
             self.target_list = [os.path.join(self.img_path, i) for i in self.target_list]
+
+    def check_endless_loop(self) -> None:
+        '''Check if the script is in an endless loop
+        '''
+        if self.last_operation:
+            if time.time() - self.last_operation.time < 60:
+                self.logger.error('Endless loop detected')
+                os.system('pause')
+                exit()
+
+class Operation:
+    '''Operation class
+
+    Attributes
+    ----------
+    operation : str
+        The operation name
+    '''
+    def __init__(self, operation:str):
+        self.operation = operation
+        self.time = time.time()

@@ -7,10 +7,11 @@ License: MIT
 '''
 
 from logger import logger
+import os
 
 from performer import scripts
 from performer.performer import Performer
-from _version import __description__
+from _version import __description__, __online__
 
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
@@ -21,8 +22,8 @@ logger.warning('默认使用1920*1080分辨率，如需更改请修改wanted文�
 performer:Performer = inquirer.select(
     message="Select a script",
     choices=[Choice(value=script,name=script.description) for script in scripts]
-).execute()(logger=logger)
+).execute()(logger=logger, online=__online__)
 
 performer.run()
 
-
+os.system('pause')

@@ -28,7 +28,6 @@ except Exception as e:
     if type(e).__name__ == 'ReadTimeout':
         logger.error('请检查网络连接')
         logger.info('进入离线模式')
-        logger.warning('请注意，离线模式下无法检查版本获得更新并加载最新资源！')
         __online__ = False
     else:
         while True:...

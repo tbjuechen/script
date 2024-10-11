@@ -136,7 +136,7 @@ class Performer(ABC):
         '''Check if the script is in an endless loop
         '''
         if self.last_operation:
-            if time.time() - self.last_operation.time < 60:
+            if time.time() - self.last_operation.time > 60:
                 self.logger.error('Endless loop detected')
                 os.system('pause')
                 exit()

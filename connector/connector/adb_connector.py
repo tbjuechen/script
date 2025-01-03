@@ -11,6 +11,8 @@ from typing import Union
 import os
 import random
 
+from loguru import logger
+
 from .base import BaseConnector, BaseConnectorConfig, DefaultConnectorConfig
 
 from adb_shell.adb_device import AdbDeviceTcp
@@ -38,7 +40,7 @@ class AdbConnector(AdbDeviceTcp, BaseConnector):
     def __init__(self, 
                  host:str, 
                  port:int, 
-                 logger:Logger, 
+                 logger:Logger = logger, 
                  config:BaseConnectorConfig=DefaultConnectorConfig(),
                  **kwargs):
         default_transport_timeout_s = kwargs.get('default_transport_timeout_s', None)

@@ -11,10 +11,8 @@ import hashlib
 import warnings
 import requests
 from urllib.parse import urljoin
-from logging import getLogger
 
-
-logger = getLogger('logger')
+from loguru import logger
 
 REMOTE_ROOT = 'https://185.199.108.133/tbjuechen/script/main/'
 

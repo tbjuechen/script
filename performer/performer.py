@@ -19,6 +19,7 @@ from .utils import is_valid_ip
 from . import loader
 
 from InquirerPy import inquirer
+from loguru import logger
 
 class Performer(ABC):
     '''Performer class
@@ -32,7 +33,7 @@ class Performer(ABC):
         The player
     '''
     def __init__(self,
-                 logger:Logger, 
+                 logger:Logger=logger, 
                  connCls:Type[ConnectorPool]=ConnectorPool, 
                  playerCls:Type[BasePlayer]=CVPlayer,
                  online:bool=True) -> None:

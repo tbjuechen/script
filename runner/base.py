@@ -161,3 +161,15 @@ class Runner(ABC, Process):
         else:
             return False
             
+class FindListRunner(Runner):
+    '''virtual class for finding a list of targets script
+    '''
+    name:str = 'FindListBase' 
+    targets:list = []
+    discription:str = 'FindListBase'
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def work(self):
+        for target in self.targets:
+            self.find_and_touch(target)

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from multiprocessing import Process, Event, Manager
 import os
 import time
-import io
+
 
 from loguru import logger
 import numpy as np
@@ -15,14 +15,13 @@ class Runner(ABC, Process):
     name:str = 'Base'
     '''Base class for the runner
     '''
-    def __init__(self, connection_class:type, connector_args:dict={}, player_class:type=CVPlayer, player_args:dict={}, time_interval:int=1, **kwargs):
+    def __init__(self, connection_class:type, connector_args:dict={}, player:Player=CVPlayer(), time_interval:int=1, **kwargs):
         super().__init__(**kwargs)
         self.status = Manager().Value('s', 'idle')
         self.time_interval = time_interval
-        self.connection = None
-        self.player = None
+        self.connection:Connector = None
+        self.player = player
         self.logger = None
-        self.logger_buffer = None
 
         self.pause_event = Event()
         self.stop_event = Event()
@@ -30,8 +29,6 @@ class Runner(ABC, Process):
 
         self.connection_class = connection_class
         self.connector_args = connector_args
-        self.player_class = player_class
-        self.player_args = player_args
 
     def path_init(self):
         '''initialize the path
@@ -46,33 +43,14 @@ class Runner(ABC, Process):
         '''Initialize the runner
         '''
         self.logger = logger
-        self.logger_buffer = io.StringIO()
 
         self.connection:Connector = self.connection_class(**self.connector_args)
-        self.player = self.player_class(**self.player_args)
         self.status.value = 'idle'
 
         self.path_init()
         self.logger.debug(f'Runner {self.name} initialized')
-        self.init_logger()
 
         self.gui = GUI()
-
-    def init_logger(self):
-        '''
-        Initialize the logger
-        redirect the log to the io buffer
-        '''
-        self.logger.remove()
-        logger.add(self.logger_buffer, level='DEBUG')
-
-    def get_log(self):
-        '''Get the log from the buffer
-        '''
-        log_info = self.logger_buffer.getvalue()
-        self.logger_buffer.seek(0)
-        self.logger_buffer.truncate()
-        return log_info
 
     @abstractmethod
     def work(self):

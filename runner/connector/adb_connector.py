@@ -39,7 +39,6 @@ class AdbConnector(AdbDeviceTcp, Connector):
     def __init__(self, 
                  host:str, 
                  port:int, 
-                 logger:Logger = logger, 
                  config:BaseConnectorConfig=DefaultConnectorConfig(),
                  **kwargs):
         default_transport_timeout_s = kwargs.get('default_transport_timeout_s', None)
@@ -50,7 +49,6 @@ class AdbConnector(AdbDeviceTcp, Connector):
         Connector.__init__(self)
 
         self.config:BaseConnectorConfig = config
-        self.logger:Logger = logger
         logger.debug(f'build adb connector with host: {host}, port: {port}')
     
     def connect(self)->bool:
@@ -61,12 +59,12 @@ class AdbConnector(AdbDeviceTcp, Connector):
         bool
             True if the connection was successful, False otherwise
         '''
-        self.logger.debug(f'try to connect to {self.host}:{self.port}')
+        logger.debug(f'try to connect to {self.host}:{self.port}')
         try:
             super().connect()
-            self.logger.info(f'connected to {self.host}:{self.port}')
+            logger.info(f'connected to {self.host}:{self.port}')
         except Exception as e:
-            self.logger.error(type(e).__name__ + ': ' + str(e))
+            logger.error(type(e).__name__ + ': ' + str(e))
         finally:
             return self._available
         
@@ -78,14 +76,14 @@ class AdbConnector(AdbDeviceTcp, Connector):
         bool
             True if the disconnection was successful, False otherwise
         '''
-        self.logger.debug(f'try to disconnect from {self.host}:{self.port}')
+        logger.debug(f'try to disconnect from {self.host}:{self.port}')
         try:
             if not self._available:
                 return True
             super().close()
-            self.logger.info(f'disconnected from {self.host}:{self.port}')
+            logger.info(f'disconnected from {self.host}:{self.port}')
         except Exception as e:
-            self.logger.error(type(e).__name__ + ': ' + str(e))
+            logger.error(type(e).__name__ + ': ' + str(e))
         finally:
             return not self._available
     
@@ -102,13 +100,13 @@ class AdbConnector(AdbDeviceTcp, Connector):
         Union[str, None]
             The output of the command if the command was successful, None otherwise
         '''
-        self.logger.debug(f'try to execute shell command: {cmd}')
+        logger.debug(f'try to execute shell command: {cmd}')
         try:
             result = super().shell(cmd)
-            self.logger.debug(f'executed shell command: {cmd}')
+            logger.debug(f'executed shell command: {cmd}')
             return result
         except Exception as e:
-            self.logger.error(type(e).__name__ + ': ' + str(e))
+            logger.error(type(e).__name__ + ': ' + str(e))
         
     def screen_shot(self)->Union[str, None]:
         '''Take a screenshot of the device.
@@ -118,7 +116,7 @@ class AdbConnector(AdbDeviceTcp, Connector):
         str
             Path to the screenshot file if the screenshot was successful, None otherwise
         '''
-        self.logger.debug(f'try to take a screenshot of the device')
+        logger.debug(f'try to take a screenshot of the device')
         target_path = self.config.SCREEN_SHOT_PATH_LOCAL
         screenshot_name = self.config.SCREEN_SHOT_NAME
 
@@ -130,17 +128,17 @@ class AdbConnector(AdbDeviceTcp, Connector):
             cmd:str = f'screencap -p sdcard/Pictures/{screenshot_name}.jpg'
             response = self.shell(cmd)
             if not response:
-                self.logger.debug('Screenshot success')
+                logger.debug('Screenshot success')
             else:
                 raise RuntimeError('Screenshot failed with response: ' + response)
             
             # pull the screenshot from the device
             screenshot_path:str = os.path.join(target_path, screenshot_name + '.jpg')
             self.pull(f'sdcard/Pictures/{screenshot_name}.jpg', screenshot_path)
-            self.logger.info(f'screenshot saved to {screenshot_path}')
+            logger.info(f'screenshot saved to {screenshot_path}')
             return screenshot_path
         except Exception as e:
-            self.logger.error(type(e).__name__ + ': ' + str(e))
+            logger.error(type(e).__name__ + ': ' + str(e))
     
     def touch(self, x:int, y:int)->bool:
         '''Touch the screen at the specified position.
@@ -157,17 +155,17 @@ class AdbConnector(AdbDeviceTcp, Connector):
         bool
             True if the touch was successful, False otherwise
         '''
-        self.logger.debug(f'try to touch the screen at position ({x}, {y})')
+        logger.debug(f'try to touch the screen at position ({x}, {y})')
         try:
             cmd:str = f'input tap {x} {y}'
             response:str = self.shell(cmd)
             if not response:
-                self.logger.info(f'touched the screen at position ({x}, {y})')
+                logger.info(f'touched the screen at position ({x}, {y})')
                 return True
             else:
                 raise RuntimeError('Touch failed with response: ' + response)
         except Exception as e:
-            self.logger.error(type(e).__name__ + ': ' + str(e))
+            logger.error(type(e).__name__ + ': ' + str(e))
             return False
     
     def drag(self, x1:int, y1:int, x2:int, y2:int, duration:float)->bool:
@@ -191,15 +189,15 @@ class AdbConnector(AdbDeviceTcp, Connector):
         bool
             True if the drag was successful, False otherwise
         '''
-        self.logger.debug(f'try to drag the screen from ({x1}, {y1}) to ({x2}, {y2})')
+        logger.debug(f'try to drag the screen from ({x1}, {y1}) to ({x2}, {y2})')
         try:
             cmd:str = f'input swipe {x1} {y1} {x2} {y2} {int(duration * 1000)}'
             response:str = self.shell(cmd)
             if not response:
-                self.logger.info(f'dragged the screen from ({x1}, {y1}) to ({x2}, {y2})')
+                logger.info(f'dragged the screen from ({x1}, {y1}) to ({x2}, {y2})')
                 return True
             else:
                 raise RuntimeError('Drag failed with response: ' + response)
         except Exception as e:
-            self.logger.error(type(e).__name__ + ': ' + str(e))
+            logger.error(type(e).__name__ + ': ' + str(e))
             return False

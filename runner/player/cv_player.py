@@ -6,7 +6,7 @@ Description: player with opencv
 License: MIT
 '''
 
-from logging import getLogger
+from loguru import logger
 import time
 
 from .base import Player
@@ -24,7 +24,6 @@ class CVPlayer(Player):
     '''
     def __init__(self, acc:float=0.8, **kwargs):
         super().__init__(acc, **kwargs)
-        self.logger = getLogger('logger')
 
     def load(self, path:str)->cv2.typing.MatLike:
         '''Load an image from a file
@@ -39,11 +38,11 @@ class CVPlayer(Player):
         cv2.typing.MatLike
             The image
         '''
-        self.logger.debug(f'load image from {path}')
+        logger.debug(f'load image from {path}')
         try:
             return cv2.imread(path)
         except Exception as e:
-            self.logger.error(f'Error loading image from {path}: {e}')
+            logger.error(f'Error loading image from {path}: {e}')
     
     def locate(self, target:str, screenshot:str, debug:bool=False)->tuple:
         '''Locate the target in the screenshot
@@ -57,7 +56,7 @@ class CVPlayer(Player):
         debug : bool
             Whether to show the debug information (default False)
         '''
-        self.logger.debug(f'locate {target} in {screenshot}')
+        logger.debug(f'locate {target} in {screenshot}')
 
         target_img:cv2.typing.MatLike = self.load(target)
         screenshot_img:cv2.typing.MatLike = self.load(screenshot)
@@ -80,10 +79,10 @@ class CVPlayer(Player):
                 p2: tuple[int,int] = x + target_w, y + target_h
                 marks.append(((x, y), p2))
         
-        self.logger.info(f'Found {len(positon)} target(s) of {target}')
+        logger.info(f'Found {len(positon)} target(s) of {target}')
 
         if debug:
-            self.logger.debug(f'Found {len(positon)} target(s)  ' + ' '.join([f'{i}: {mark}' for i, mark in enumerate(positon)]))
+            logger.debug(f'Found {len(positon)} target(s)  ' + ' '.join([f'{i}: {mark}' for i, mark in enumerate(positon)]))
             for i, mark in enumerate(marks):
                 screenshot_img = self.mark(screenshot_img, mark[0], mark[1])
             cv2.imshow(f'result for {target}:', screenshot_img)
@@ -115,5 +114,5 @@ class CVPlayer(Player):
         ms : int
             The time to wait in milliseconds
         '''
-        self.logger.debug(f'Waiting for {ms} seconds')
+        logger.debug(f'Waiting for {ms} seconds')
         time.sleep(ms / 1000)

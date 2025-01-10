@@ -8,7 +8,7 @@ License: MIT
 
 from abc import ABC, abstractmethod
 
-class BasePlayer(ABC):
+class Player(ABC):
     '''Base class for all players
 
     Attributes

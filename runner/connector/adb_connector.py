@@ -9,15 +9,14 @@ License: MIT
 from logging import Logger
 from typing import Union
 import os
-import random
 
 from loguru import logger
 
-from .base import BaseConnector, BaseConnectorConfig, DefaultConnectorConfig
+from .base import Connector, BaseConnectorConfig, DefaultConnectorConfig
 
 from adb_shell.adb_device import AdbDeviceTcp
 
-class AdbConnector(AdbDeviceTcp, BaseConnector):
+class AdbConnector(AdbDeviceTcp, Connector):
     '''
     A class with methods for connecting to a device via TCP and executing ADB commands base on AdbDeviceTcp.
 
@@ -48,6 +47,7 @@ class AdbConnector(AdbDeviceTcp, BaseConnector):
         self.host = host
         self.port = port
         super().__init__(host, port, default_transport_timeout_s, banner)
+        Connector.__init__(self)
 
         self.config:BaseConnectorConfig = config
         self.logger:Logger = logger
@@ -141,24 +141,6 @@ class AdbConnector(AdbDeviceTcp, BaseConnector):
             return screenshot_path
         except Exception as e:
             self.logger.error(type(e).__name__ + ': ' + str(e))
-
-    def _generate_positon(self, x:int, y:int)->tuple:
-        '''Generate the position based on the offset.
-        
-        Parameters
-        ----------
-        x : int
-            The x coordinate
-        y : int
-            The y coordinate
-        
-        Returns
-        -------
-        tuple
-            The new position
-        '''
-        offset_x, offset_y = self.config.OFFSET
-        return x + random.randint(-offset_x, offset_x), y + random.randint(-offset_y, offset_y)
     
     def touch(self, x:int, y:int)->bool:
         '''Touch the screen at the specified position.
@@ -177,7 +159,6 @@ class AdbConnector(AdbDeviceTcp, BaseConnector):
         '''
         self.logger.debug(f'try to touch the screen at position ({x}, {y})')
         try:
-            x, y = self._generate_positon(x, y)
             cmd:str = f'input tap {x} {y}'
             response:str = self.shell(cmd)
             if not response:
@@ -212,8 +193,6 @@ class AdbConnector(AdbDeviceTcp, BaseConnector):
         '''
         self.logger.debug(f'try to drag the screen from ({x1}, {y1}) to ({x2}, {y2})')
         try:
-            x1, y1 = self._generate_positon(x1, y1)
-            x2, y2 = self._generate_positon(x2, y2)
             cmd:str = f'input swipe {x1} {y1} {x2} {y2} {int(duration * 1000)}'
             response:str = self.shell(cmd)
             if not response:

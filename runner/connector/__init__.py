@@ -8,3 +8,4 @@ License: MIT
 
 from .mumu_connector import MumuConnector
 from .adb_connector import AdbConnector
+from .base import Connector

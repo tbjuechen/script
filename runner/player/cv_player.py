@@ -9,12 +9,12 @@ License: MIT
 from logging import getLogger
 import time
 
-from .base import BasePlayer
+from .base import Player
 
 import cv2
 import numpy as np
 
-class CVPlayer(BasePlayer):
+class CVPlayer(Player):
     '''Player with opencv
 
     Attributes

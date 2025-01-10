@@ -9,7 +9,14 @@ License: MIT
 from abc import ABC, abstractmethod
 import os
 
-class BaseConnector(ABC):
+cnt:int = 1
+
+class Connector(ABC):
+    def __init__(self):
+        global cnt
+        self.name:str = f'{self.__class__.__name__}-{cnt}'
+        cnt += 1
+
     @abstractmethod
     def connect(self)->bool:...
 

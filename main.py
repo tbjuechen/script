@@ -6,24 +6,36 @@ Description: main file
 License: MIT
 '''
 
-from logger import logger
-import os
+from runner import Runner
+from runner.connector import MumuConnector
+from runner.player import CVPlayer
+from runner.simple import Mitama,Active
 
-from performer import scripts
-from performer.performer import Performer
-from _version import __description__, __online__
-
-from InquirerPy import inquirer
-from InquirerPy.base.control import Choice
+from loguru import logger
+import pickle
 
 
-print(__description__)
-logger.warning('默认使用1920*1080分辨率，如需更改请修改wanted文件夹下的图片')
-performer:Performer = inquirer.select(
-    message="Select a script",
-    choices=[Choice(value=script,name=script.description) for script in scripts]
-).execute()(logger=logger, online=__online__)
+import time
 
-performer.run()
+class Test(Runner):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-os.system('pause')
+    def work(self):
+        self.logger.info('Test runner working')
+        loc = self._find('ok.jpg')
+        if loc:
+            self.logger.info(f'Found at {loc}')
+        self.logger.info('Test runner finished')
+    
+
+if __name__ == '__main__':
+    test1 = Active(connection_class=MumuConnector, player=CVPlayer())
+    # test2 = Mitama(connection_class=MumuConnector, connector_args={'port':'16416'}, player=CVPlayer())
+    test1.start()
+    # test2.start()
+    test1.join()
+    # test2.join()
+
+    # test = Test(connection_class=MumuConnector, player=CVPlayer())
+

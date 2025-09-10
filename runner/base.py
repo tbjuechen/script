@@ -11,6 +11,8 @@ from .connector import Connector
 from .player import Player, CVPlayer
 from .gui import GUI
 
+cnt:int = 1
+
 class Runner(ABC, Process):
     name:str = 'Base'
     '''Base class for the runner
@@ -22,6 +24,9 @@ class Runner(ABC, Process):
         self.connection:Connector = None
         self.player = player
         self.logger = None
+        global cnt
+        self.name = f'{self.name}-{cnt}'
+        cnt += 1
 
         self.pause_event = Event()
         self.stop_event = Event()
@@ -34,7 +39,7 @@ class Runner(ABC, Process):
         '''initialize the path
         '''
         local_abs_path = os.getcwd()
-        self.cache_path = os.path.join(local_abs_path, 'cache', f'{self.connection.name}-cache')
+        self.cache_path = os.path.join(local_abs_path, 'cache', f'{self.name}-cache')
         os.makedirs(self.cache_path, exist_ok=True)
         self.wanted_path = os.path.join(local_abs_path, 'wanted')
         self.connection.config.SCREEN_SHOT_PATH_LOCAL = self.cache_path
@@ -171,5 +176,9 @@ class FindListRunner(Runner):
         super().__init__(**kwargs)
 
     def work(self):
-        for target in self.targets:
-            self.find_and_touch(target)
+        try:
+            for target in self.targets:
+                self.find_and_touch(target)
+        except Exception as e:
+            self.logger.error(f'Error in {self.name}: {e}')
+        

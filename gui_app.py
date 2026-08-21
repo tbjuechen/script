@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from multiprocessing import Queue
 from pathlib import Path
 from queue import Empty
+import subprocess
+import sys
 from threading import Thread
 import tkinter as tk
 from tkinter import messagebox, ttk
@@ -18,6 +20,7 @@ TASK_CLASSES = (Active, Mitama, HeroExp, Spirit, Fire)
 TASKS = {task.name: task for task in TASK_CLASSES}
 TASK_LABELS = {f"{task.description}（{task.name}）": task.name for task in TASK_CLASSES}
 PROJECT_ROOT = Path(__file__).resolve().parent
+BLACK_SCREEN_SCRIPT = PROJECT_ROOT / "black_screen.pyw"
 
 
 @dataclass(frozen=True)
@@ -68,13 +71,14 @@ class AutomationApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("阴阳师自动化助手")
-        self.root.geometry("1040x720")
-        self.root.minsize(900, 640)
+        self.root.geometry("1040x780")
+        self.root.minsize(900, 700)
         self.root.configure(bg=self.BG)
 
         self.runner = None
         self.log_queue: Queue[Any] = Queue()
         self.preview_image: tk.PhotoImage | None = None
+        self.black_screen_process: subprocess.Popen | None = None
         self.closing = False
 
         self.task_var = tk.StringVar(value=next(iter(TASK_LABELS)))
@@ -175,6 +179,11 @@ class AutomationApp:
         self.resume_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=4)
         self.stop_button = ttk.Button(action_row, text="停止", command=self.stop)
         self.stop_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 0))
+
+        self.black_screen_button = ttk.Button(
+            controls, text="开启纯黑遮罩", command=self.toggle_black_screen
+        )
+        self.black_screen_button.pack(fill=tk.X, pady=(12, 0))
 
         ttk.Label(preview, text="设备画面", style="Section.TLabel").grid(
             row=0, column=0, sticky=tk.W
@@ -355,6 +364,46 @@ class AutomationApp:
             self.runner.stop()
             self._append_log("正在停止任务……")
 
+    def toggle_black_screen(self) -> None:
+        if (
+            self.black_screen_process is not None
+            and self.black_screen_process.poll() is None
+        ):
+            self._close_black_screen()
+            return
+
+        try:
+            self.black_screen_process = subprocess.Popen(
+                [sys.executable, str(BLACK_SCREEN_SCRIPT)],
+                cwd=PROJECT_ROOT,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except OSError as error:
+            self._append_log(f"无法开启纯黑遮罩：{error}")
+            messagebox.showerror("开启黑屏失败", str(error), parent=self.root)
+            return
+        self.black_screen_button.config(text="关闭纯黑遮罩（Esc）")
+        self._append_log("纯黑遮罩已开启；按 Esc 或 Alt+F4 可退出")
+
+    def _close_black_screen(self) -> None:
+        if (
+            self.black_screen_process is not None
+            and self.black_screen_process.poll() is None
+        ):
+            self.black_screen_process.terminate()
+        self.black_screen_process = None
+        self.black_screen_button.config(text="开启纯黑遮罩")
+        self._append_log("纯黑遮罩已关闭")
+
+    def _sync_black_screen(self) -> None:
+        if (
+            self.black_screen_process is not None
+            and self.black_screen_process.poll() is not None
+        ):
+            self.black_screen_process = None
+            self.black_screen_button.config(text="开启纯黑遮罩")
+            self._append_log("纯黑遮罩已退出")
+
     def _poll(self) -> None:
         try:
             while True:
@@ -369,11 +418,14 @@ class AutomationApp:
                 state = "stopped" if self.runner.exitcode == 0 else "failed"
                 self._set_controls(state)
 
+        self._sync_black_screen()
+
         if not self.closing:
             self.root.after(100, self._poll)
 
     def close(self) -> None:
         self.closing = True
+        self._close_black_screen()
         if self.runner is not None and self.runner.is_alive():
             self.runner.stop()
             self._wait_for_close(0)

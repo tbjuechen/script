@@ -30,7 +30,11 @@ class CVPlayer(Player):
         return image
 
     def locate(
-        self, target: str, screenshot: str, debug: bool = False
+        self,
+        target: str,
+        screenshot: str,
+        debug: bool = False,
+        region: tuple[float, float, float, float] | None = None,
     ) -> tuple[int, int] | None:
         target_img = self.load(target)
         screenshot_img = self.load(screenshot)
@@ -53,17 +57,29 @@ class CVPlayer(Player):
                 scale_x,
                 scale_y,
             )
+        search_img = screenshot_img
+        offset_x = offset_y = 0
+        if region is not None:
+            left, top, right, bottom = region
+            if not (0 <= left < right <= 1 and 0 <= top < bottom <= 1):
+                raise ValueError("region must be normalized as left, top, right, bottom")
+            offset_x, offset_y = int(screen_w * left), int(screen_h * top)
+            crop_right, crop_bottom = int(screen_w * right), int(screen_h * bottom)
+            search_img = screenshot_img[offset_y:crop_bottom, offset_x:crop_right]
+
         target_h, target_w = target_img.shape[:2]
-        if target_h > screen_h or target_w > screen_w:
+        search_h, search_w = search_img.shape[:2]
+        if target_h > search_h or target_w > search_w:
             logger.warning("模板尺寸大于截屏：{}", target)
             return None
 
-        result = cv2.matchTemplate(screenshot_img, target_img, cv2.TM_CCOEFF_NORMED)
+        result = cv2.matchTemplate(search_img, target_img, cv2.TM_CCOEFF_NORMED)
         _, confidence, _, top_left = cv2.minMaxLoc(result)
         logger.debug("模板 {} 匹配度 {:.3f}", Path(target).name, confidence)
         if confidence < self.acc:
             return None
 
+        top_left = (top_left[0] + offset_x, top_left[1] + offset_y)
         center = (top_left[0] + target_w // 2, top_left[1] + target_h // 2)
         if debug:
             bottom_right = (top_left[0] + target_w, top_left[1] + target_h)

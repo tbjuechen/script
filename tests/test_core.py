@@ -87,6 +87,26 @@ class PlayerTests(unittest.TestCase):
 
         self.assertEqual(location, (200 + width // 2, 100 + height // 2))
 
+    def test_locates_template_in_normalized_region(self) -> None:
+        rng = np.random.default_rng(11)
+        target = rng.integers(0, 256, size=(20, 30, 3), dtype=np.uint8)
+        screenshot = np.zeros((100, 200, 3), dtype=np.uint8)
+        screenshot[70:90, 150:180] = target
+
+        with TemporaryDirectory() as directory:
+            target_path = Path(directory) / "target.png"
+            screenshot_path = Path(directory) / "screen.png"
+            cv2.imwrite(str(target_path), target)
+            cv2.imwrite(str(screenshot_path), screenshot)
+            player = CVPlayer(acc=0.9, reference_size=(200, 100))
+            location = player.locate(
+                str(target_path),
+                str(screenshot_path),
+                region=(0.5, 0.5, 1.0, 1.0),
+            )
+
+        self.assertEqual(location, (165, 80))
+
 
 class CliTests(unittest.TestCase):
     def test_defaults(self) -> None:

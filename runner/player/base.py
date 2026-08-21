@@ -20,7 +20,13 @@ class Player(ABC):
         self.acc = acc
 
     @abstractmethod
-    def locate(self, target:str, screenshot:str, debug:bool=False)->tuple:...
+    def locate(
+        self,
+        target: str,
+        screenshot: str,
+        debug: bool = False,
+        region: tuple[float, float, float, float] | None = None,
+    ) -> tuple: ...
 
     @abstractmethod
     def load(self, path: str):...

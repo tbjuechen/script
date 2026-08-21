@@ -153,10 +153,17 @@ class Runner(ABC, Process):
             raise RuntimeError("设备截屏失败")
         return path
 
-    def find(self, target: str, screenshot: str) -> tuple[int, int] | None:
+    def find(
+        self,
+        target: str,
+        screenshot: str,
+        region: tuple[float, float, float, float] | None = None,
+    ) -> tuple[int, int] | None:
         if self.wanted_path is None:
             raise RuntimeError("任务尚未初始化")
-        location = self.player.locate(str(self.wanted_path / target), screenshot)
+        location = self.player.locate(
+            str(self.wanted_path / target), screenshot, region=region
+        )
         if location is not None:
             logger.info("识别到 {}，位置 {}", target, location)
         return location
@@ -170,8 +177,13 @@ class Runner(ABC, Process):
     def randomize_position(x: int, y: int, offset: int = 10) -> tuple[int, int]:
         return int(x + offset * np.random.normal()), int(y + offset * np.random.normal())
 
-    def find_and_touch(self, target: str, screenshot: str) -> bool:
-        location = self.find(target, screenshot)
+    def find_and_touch(
+        self,
+        target: str,
+        screenshot: str,
+        region: tuple[float, float, float, float] | None = None,
+    ) -> bool:
+        location = self.find(target, screenshot, region=region)
         if location is None:
             return False
         return self.touch(*self.randomize_position(*location))
@@ -183,9 +195,12 @@ class FindListRunner(Runner):
     name = "find-list"
     description = "模板列表任务"
     targets: tuple[str, ...] = ()
+    target_regions: dict[str, tuple[float, float, float, float]] = {}
 
     def work(self) -> None:
         screenshot = self.screenshot()
         for target in self.targets:
-            if self.find_and_touch(target, screenshot):
+            if self.find_and_touch(
+                target, screenshot, region=self.target_regions.get(target)
+            ):
                 break

@@ -60,7 +60,7 @@ python main.py --help
 | 参数 | 功能 |
 |---|---|
 | `active` | 月伴生活动 |
-| `mitama` | 多人御魂副本 |
+| `mitama` | 御魂副本（悲鸣单人/组队） |
 | `hero-exp` | 英杰经验副本 |
 | `spirit` | 御灵副本 |
 | `fire` | 业原火 |

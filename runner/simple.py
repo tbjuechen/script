@@ -9,8 +9,16 @@ class Active(FindListRunner):
 
 class Mitama(FindListRunner):
     name = "mitama"
-    description = "多人御魂副本"
-    targets = ("refuse.jpg", "yys_begin.jpg", "yys_jieshu.jpg", "yys_jixu.jpg")
+    description = "御魂副本（悲鸣/组队）"
+    targets = (
+        "refuse.jpg",
+        "active_begin.jpg",
+        "yys_begin.jpg",
+        "yys_jieshu.jpg",
+        "yys_jixu.jpg",
+    )
+    # 悲鸣单人挑战按钮位于右下角；限定搜索区域，避免同图标误触。
+    target_regions = {"active_begin.jpg": (0.80, 0.65, 1.0, 1.0)}
 
 
 class HeroExp(FindListRunner):

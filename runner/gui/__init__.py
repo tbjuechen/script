@@ -1,107 +1,49 @@
-from threading import Thread
-
-import time
-from typing import Callable
-
+from multiprocessing import current_process
+from queue import Empty, Queue
+from threading import Event, Thread
 import tkinter as tk
 from tkinter import font
-from multiprocessing import current_process
 
 from loguru import logger
 
+
 class GUI(Thread):
-    '''
-    GUI for display the log of the runner in another thread
-    '''
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.logger = logger
+    """Optional, thread-safe log window for a runner process."""
 
-    def init_gui(self):
-        '''Initialize the GUI
-        '''
-        self.root = tk.Tk()
-        self.root.title(f'Runner {current_process().name} Log')
-        self.root.geometry('800x600')
-        self.text = tk.Text(self.root, font=font.Font(family='Consolas', size=10))
-        self.text.pack(expand=True, fill='both')
+    def __init__(self) -> None:
+        super().__init__(daemon=True)
+        self._messages: Queue[str] = Queue()
+        self._stop_event = Event()
+        self._sink_id: int | None = None
 
-        class MultiColorTextHandler:
-            """
-            自定义日志处理类，为 time、level 和 message 设置不同颜色。
-            """
-            def __init__(self, text_widget:tk.Text):
-                self.text_widget:tk.Text = text_widget
-                self.text_widget.config(state=tk.DISABLED)
+    def run(self) -> None:
+        root = tk.Tk()
+        root.title(f"Runner {current_process().name} Log")
+        root.geometry("800x600")
+        text = tk.Text(root, font=font.Font(family="Consolas", size=10), state=tk.DISABLED)
+        text.pack(expand=True, fill="both")
 
-                # 配置颜色
-                self.colors:dict = {
-                    "time": "blue",
-                    "level": {
-                        "DEBUG": "gray",
-                        "INFO": "green",
-                        "WARNING": "orange",
-                        "ERROR": "red",
-                        "CRITICAL": "purple",
-                    },
-                    "message": "black",
-                }
+        self._sink_id = logger.add(lambda message: self._messages.put(str(message)), level="DEBUG")
 
-                # 定义标签样式
-                self.text_widget.tag_configure("time", foreground=self.colors["time"])
-                for level, color in self.colors["level"].items():
-                    self.text_widget.tag_configure(f"level_{level}", foreground=color)
-                self.text_widget.tag_configure("message", foreground=self.colors["message"])
-
-            def write(self, record):
-                """
-                根据日志记录动态应用不同颜色到 time、level 和 message。
-                """
-                time = record["time"].strftime("%Y-%m-%d %H:%M:%S")
-                level = record["level"].name.ljust(8)
-                message = record["message"]
-
-                self.text_widget.config(state=tk.NORMAL)
-
-                # 插入 time
-                self.text_widget.insert(tk.END, f"{time} ", "time")
-
-                self.text_widget.insert(tk.END, " | ")
-
-                # 插入 level
-                self.text_widget.insert(tk.END, f"{level} ", f"level_{level}")
-
-                self.text_widget.insert(tk.END, " | ")
-
-                # 插入 message
-                self.text_widget.insert(tk.END, f"{message}\n", "message")
-
-                self.text_widget.yview(tk.END)
-                self.text_widget.config(state=tk.DISABLED)
-
-            def flush(self):
-                """
-                保留兼容性，但不执行具体操作。
-                """
+        def update() -> None:
+            try:
+                while True:
+                    message = self._messages.get_nowait()
+                    text.config(state=tk.NORMAL)
+                    text.insert(tk.END, message)
+                    text.see(tk.END)
+                    text.config(state=tk.DISABLED)
+            except Empty:
                 pass
-        
-        self.text_handler = MultiColorTextHandler(self.text)
+            if self._stop_event.is_set():
+                root.destroy()
+            else:
+                root.after(100, update)
 
-        def log_message_sink(message):
-            record = message.record  # 获取日志记录
-            self.text_handler.write(record)    # 传递记录给自定义处理器
+        root.after(100, update)
+        root.mainloop()
+        if self._sink_id is not None:
+            logger.remove(self._sink_id)
 
-        self.logger.remove()
-        self.logger.add(log_message_sink, level='DEBUG')
-
-        self.root.mainloop()
-    
-    def run(self):
-        '''Run the GUI
-        '''
-        self.init_gui()
-
-    def stop(self):
-        '''Stop the GUI
-        '''
-        self.root.quit()
+    def stop(self) -> None:
+        self._stop_event.set()

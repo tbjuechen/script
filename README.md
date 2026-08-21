@@ -1,58 +1,116 @@
-## 阴阳师脚本
+# 阴阳师视觉自动化脚本
 
-使用[adb-shell](https://adb-shell.readthedocs.io/en/stable/)连接模拟器/手机，通过adb标准规范与安卓设备通信，实现截图、虚拟点击等核心功能。
+通过 TCP ADB 控制 Android 模拟器或手机，并使用 OpenCV 模板匹配识别游戏按钮。
 
-使用[opencv](https://github.com/opencv/opencv-python)的模板匹配模块检测截图中的目标图像位置，在找到目标后进行更多操作。
+> 仅建议用于减少个人账号的重复操作。使用自动化工具可能违反游戏服务条款，请自行评估账号风险。
 
-感谢@[anywhere2go](https://github.com/anywhere2go)的[工作](https://github.com/anywhere2go/auto_player)，本项目基于这个思路开发。
+## 环境要求
 
-QQ交流群：157307963
+- Windows 10/11
+- Python 3.10 或更高版本
+- 支持 TCP ADB 的模拟器或 Android 设备
+- 游戏分辨率 `1920 × 1080`
 
-### 2025.9.10更新
-适配九周年版本
+项目默认连接 MuMu 模拟器的 `127.0.0.1:16384`。实际端口以 MuMu 多开器中显示的 ADB 端口为准。
 
-### 写在前面
+## 安装
 
-阴阳师已经来到第八个年头，进入了游戏的生命周期末期，大部分玩家可能已经失去了当初的激情，懒得再每天挖土、爬塔，这也是这个项目诞生的原因。使用本脚本可以避免绝大部分游戏中的重复劳动，解放你的业余时间。但是，作为脚本用户，请不要因此跳脸普通玩家，也不要在墙内公共社交平台大肆宣扬这个项目，更不要用这个脚本去做代肝。
+建议在虚拟环境中安装依赖：
 
-此外，由于精力有限，这个项目并不会很快的发展到一个完全完善、稳定的版本，但是在退坑前会一直保持维护，只要你还能看到句话，欢迎[issue](https://github.com/tbjuechen/script/issues)或[pr](https://github.com/tbjuechen/script/pulls)，不过请保护好自己的游戏id。
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
 
-最后，一句老生常谈的话送给大家——**用别怕，怕别用**。
+## 使用
 
-### 使用方法
+运行默认的活动任务：
 
-1. 从[release](https://github.com/tbjuechen/script/releases)下载最新的版本。
-2. 运行程序，根据流程选择需要执行的脚本并连接到您的设备，然后，do anything you want~
+```powershell
+python main.py
+```
 
-### 注意事项
+指定任务和模拟器端口：
 
-1. 因为使用纯视觉方案，脚本所需资源需要动态下载，请确保和`raw.githubusercontent.com`的连接。在当前版本（v1.2.1）中，在版本检查过程中出错后会自动进入离线模式。**离线模式不会更新最新的资源**，在某些情况下可能会导致脚本失效，例如每个月的伴生爬塔活动。
-2. 关于连接到设备，本脚本使用`abc-shell`库提供的tcp连接方法连接到您的设备，所以设备的`ip`和`端口`是必须的。如果你不理解这是什么，那么推荐你使用mumu模拟器。在成功运行模拟器后，在mumu多开器（**注意不是模拟器**）右上角点击带有`adb`字样的图标即可获得正在运行的模拟器的`端口号`，而在本机运行的模拟器`ip`均为**127.0.0.1**。
-3. 目前只提供了mumu模拟器选项，但是在当前版本并未区分不同模拟器的特性（~~其实是我懒~~），固对于不同模拟器甚至是手机，都是可以通过mumu选项进行正常连接的。
-4. 因为种种原因，目前仅支持**1920*1080分辨率**的设备，请将你的设备调整到这个分辨率，不然将会导致脚本无法使用。
-5. 由于精力有限，无法每次面面俱到地测试程序，所以在遇到问题后请尝试更新到最新版本、使用mumu模拟器（因为开发时用它测试的）、使用默认的游戏设置等。如果问题还不能解决，欢迎大家将发现的问题提到[issue](https://github.com/tbjuechen/script/issues)中，我会尽量帮助解决，但是请不要做不会思考的伸手党。
+```powershell
+python main.py --task mitama --port 16416
+```
 
-### 目前实现：
+查看所有参数：
 
-* [x] 基本流程框架
-* [x] 业原火
-* [x] 御魂组队副本
-* [x] 活动爬塔
-* [x] 御灵
-* [x] 源赖光经验副本
+```powershell
+python main.py --help
+```
 
-如果你有更多的需求或者idea，也欢迎提到issue中。
+可用任务：
 
-如果你想加入开发，请继续看下面的部分
+| 参数 | 功能 |
+|---|---|
+| `active` | 月伴生活动 |
+| `mitama` | 多人御魂副本 |
+| `hero-exp` | 英杰经验副本 |
+| `spirit` | 御灵副本 |
+| `fire` | 业原火 |
 
-### 写给开发者
+常用选项：
 
-无论你是大佬还是萌新，甚至是0基础想学习代码，这里都欢迎你。如果你有这个意向，请通过QQ或者GitHub联系我。
+- `--host`：ADB 地址，默认 `127.0.0.1`
+- `--port`：ADB 端口，默认 `16384`
+- `--threshold`：模板匹配阈值，默认 `0.8`
+- `--interval`：每轮识别间隔，默认 `1` 秒
+- `--gui`：显示独立日志窗口
+- `--debug`：输出模板匹配度等调试信息
 
-### 未来规划
+按 `Ctrl+C` 可安全停止任务并断开 ADB。
 
-1. 更易用的前端界面：目前使用Node.js风格的inquirer命令行，对于当前已经够用，但是对于复杂功能的开发就显得捉襟见肘了，所以希望擅长pyqt的大佬可以协助重构这个前端。
-2. 更多的识别方式：目前的视觉方案中主要使用了opencv中`matchTemplate`这个api，在低性能的机器上存在低效的问题，所以希望在未来能够探索更轻量的模板匹配模型或是OCR模型，例如[paddleOCR](https://github.com/PaddlePaddle/PaddleOCR)。
-3. 更优秀的脚本流程：目前的流程使用简单粗暴的循环，可以稳定运行，但是效率显然不是最佳的，希望可以通过优化脚本流程、增加状态控制等方法加速脚本执行的速度。
-4. 更合理的架构：本项目时从过去我一直使用的脚本重构而来，架构均为一拍脑袋想的，在未来开发中可能发现越来越多的不足，所以在开发过程中会不断优化架构。
+## 项目结构
 
+```text
+main.py                 命令行入口
+schedule.py             多设备、多任务调度辅助类
+runner/
+  base.py               任务进程和识图点击流程
+  simple.py             游戏任务定义
+  connector/            ADB 连接、截屏、点击和滑动
+  player/               OpenCV 模板识别
+  gui/                  可选日志窗口
+wanted/                 1920×1080 环境下截取的目标模板
+tests/                   离线单元测试
+```
+
+每轮任务只获取一次设备截图，然后按任务定义的顺序查找目标；识别到第一个目标并点击后进入下一轮，避免对已经变化的界面继续使用旧截图。
+
+## 测试
+
+测试不需要启动模拟器：
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+## 打包
+
+安装打包依赖后使用仓库中的配置生成单文件程序；配置会自动包含 `wanted/` 模板资源：
+
+```powershell
+python -m pip install -r requirements-dev.txt
+pyinstaller main.spec
+```
+
+## 增加任务
+
+在 `runner/simple.py` 中继承 `FindListRunner`，按优先级填写模板文件名：
+
+```python
+class Example(FindListRunner):
+    name = "example"
+    description = "示例任务"
+    targets = ("confirm.jpg", "begin.jpg", "continue.jpg")
+```
+
+然后将任务类加入 `main.py` 的 `TASKS` 即可。
+
+## 致谢
+
+项目思路参考了 [anywhere2go/auto_player](https://github.com/anywhere2go/auto_player)。项目采用 MIT License。

@@ -1,184 +1,177 @@
-from abc import ABC, abstractmethod
-from multiprocessing import Process, Event, Manager
-import os
-import time
+from __future__ import annotations
 
+from abc import ABC, abstractmethod
+from multiprocessing import Event, Process, Value
+from pathlib import Path
+from typing import Any
 
 from loguru import logger
 import numpy as np
 
 from .connector import Connector
-from .player import Player, CVPlayer
-from .gui import GUI
+from .player import CVPlayer, Player
 
-cnt:int = 1
 
 class Runner(ABC, Process):
-    name:str = 'Base'
-    '''Base class for the runner
-    '''
-    def __init__(self, connection_class:type, connector_args:dict={}, player:Player=CVPlayer(), time_interval:int=1, **kwargs):
-        super().__init__(**kwargs)
-        self.status = Manager().Value('s', 'idle')
-        self.time_interval = time_interval
-        self.connection:Connector = None
-        self.player = player
-        self.logger = None
-        global cnt
-        self.name = f'{self.name}-{cnt}'
-        cnt += 1
+    """Base process for an automation task."""
 
+    name = "base"
+    description = "基础任务"
+
+    _IDLE = 0
+    _RUNNING = 1
+    _PAUSED = 2
+    _STOPPED = 3
+    _STATUS_NAMES = {
+        _IDLE: "idle",
+        _RUNNING: "running",
+        _PAUSED: "paused",
+        _STOPPED: "stopped",
+    }
+
+    def __init__(
+        self,
+        connection_class: type[Connector],
+        connector_args: dict[str, Any] | None = None,
+        player: Player | None = None,
+        time_interval: float = 1.0,
+        show_gui: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(**kwargs)
+        if time_interval < 0:
+            raise ValueError("time_interval must be non-negative")
+
+        self.connection_class = connection_class
+        self.connector_args = dict(connector_args or {})
+        self.player = player or CVPlayer()
+        self.time_interval = time_interval
+        self.show_gui = show_gui
+
+        self._status = Value("i", self._IDLE)
         self.pause_event = Event()
         self.stop_event = Event()
         self.pause_event.set()
 
-        self.connection_class = connection_class
-        self.connector_args = connector_args
+        self.connection: Connector | None = None
+        self.cache_path: Path | None = None
+        self.wanted_path: Path | None = None
 
-    def path_init(self):
-        '''initialize the path
-        '''
-        local_abs_path = os.getcwd()
-        self.cache_path = os.path.join(local_abs_path, 'cache', f'{self.name}-cache')
-        os.makedirs(self.cache_path, exist_ok=True)
-        self.wanted_path = os.path.join(local_abs_path, 'wanted')
-        self.connection.config.SCREEN_SHOT_PATH_LOCAL = self.cache_path
+    @property
+    def status(self) -> str:
+        return self._STATUS_NAMES[self._status.value]
 
-    def _init(self):
-        '''Initialize the runner
-        '''
-        self.logger = logger
+    def _set_status(self, status: int) -> None:
+        self._status.value = status
 
-        self.connection:Connector = self.connection_class(**self.connector_args)
-        self.status.value = 'idle'
-
-        self.path_init()
-        self.logger.debug(f'Runner {self.name} initialized')
-
-        self.gui = GUI()
+    def _initialize(self) -> None:
+        self.connection = self.connection_class(**self.connector_args)
+        project_root = Path(__file__).resolve().parent.parent
+        self.cache_path = project_root / "cache" / f"{self.name}-{self.pid}"
+        self.cache_path.mkdir(parents=True, exist_ok=True)
+        self.wanted_path = project_root / "wanted"
+        self.connection.config.screen_shot_path_local = self.cache_path
 
     @abstractmethod
-    def work(self):
-        '''The main sequence of the script
-        '''
-        pass
+    def work(self) -> None:
+        """Execute one automation cycle."""
 
-    def run(self):
-        '''The main loop
-        '''
-        self._init()
-        self.gui.start()
+    def run(self) -> None:
+        gui = None
+        try:
+            self._initialize()
+            assert self.connection is not None
+            if not self.connection.connect():
+                raise ConnectionError(
+                    f"无法连接设备：{self.connector_args.get('host', '127.0.0.1')}:"
+                    f"{self.connector_args.get('port', 16384)}"
+                )
 
-        self.status.value = 'running'
-        self.logger.info(f'{self.name} started')
-        self.connection.connect()
-        while not self.stop_event.is_set():
-            self.pause_event.wait()  # wait for resume
-            self.work()
-            time.sleep(self.time_interval)
+            if self.show_gui:
+                from .gui import GUI
 
-        self.connection.disconnect()
-        self.logger.info(f'{self.name} stopped')
-        self.gui.stop()
-    
-    def pause(self):
-        '''Pause the runner
-        '''
-        if self.status.value == 'running':
-            self.status.value = 'paused'
-            self.pause_event.clear()
-        else:
-            raise ValueError(f'Runner {self.name} is not running')
-        
-    def resume(self):
-        '''Resume the runner
-        '''
-        if self.status.value == 'paused':
-            self.status.value = 'running'
-            self.pause_event.set()
-        else:
-            raise ValueError(f'Runner {self.name} is not paused')
-    
-    def stop(self):
-        '''Stop the runner
-        '''
-        self.status.value = 'stopped'
+                gui = GUI()
+                gui.start()
+
+            self._set_status(self._RUNNING)
+            logger.info("任务 {} 已启动", self.name)
+            while not self.stop_event.is_set():
+                self.pause_event.wait()
+                if self.stop_event.is_set():
+                    break
+                self.work()
+                self.stop_event.wait(self.time_interval)
+        except KeyboardInterrupt:
+            logger.info("任务 {} 收到停止信号", self.name)
+        except Exception:
+            logger.exception("任务 {} 异常退出", self.name)
+            raise
+        finally:
+            if self.connection is not None:
+                self.connection.disconnect()
+            if gui is not None:
+                gui.stop()
+            self._set_status(self._STOPPED)
+            logger.info("任务 {} 已停止", self.name)
+
+    def pause(self) -> None:
+        if self.status != "running":
+            raise RuntimeError(f"任务 {self.name} 当前状态不是 running")
+        self._set_status(self._PAUSED)
+        self.pause_event.clear()
+
+    def resume(self) -> None:
+        if self.status != "paused":
+            raise RuntimeError(f"任务 {self.name} 当前状态不是 paused")
+        self._set_status(self._RUNNING)
+        self.pause_event.set()
+
+    def stop(self) -> None:
+        self._set_status(self._STOPPED)
         self.stop_event.set()
+        self.pause_event.set()
 
-    def _find(self, target:str):
-        '''Find the target in the screenshot
+    def screenshot(self) -> str:
+        if self.connection is None:
+            raise RuntimeError("连接器尚未初始化")
+        path = self.connection.screen_shot()
+        if not path:
+            raise RuntimeError("设备截屏失败")
+        return path
 
-        Parameters
-        ----------
-        target : str
-            The target image file name
-        '''
-        screenshot:str = self.connection.screen_shot()
-        location = self.player.locate(os.path.join(self.wanted_path, target), screenshot)
-        if location:
-            self.logger.info(f'Found {target} at {location}')
-            return location
-        else:
-            self.logger.debug(f'{target} not found')
-            return None
-    
-    def _touch(self, x:int, y:int):
-        '''Touch the screen at the location
+    def find(self, target: str, screenshot: str) -> tuple[int, int] | None:
+        if self.wanted_path is None:
+            raise RuntimeError("任务尚未初始化")
+        location = self.player.locate(str(self.wanted_path / target), screenshot)
+        if location is not None:
+            logger.info("识别到 {}，位置 {}", target, location)
+        return location
 
-        Parameters
-        ----------
-        x : int
-            The x coordinate
-        y : int
-            The y coordinate
-        '''
-        self.connection.touch(x, y)
-        self.logger.debug(f'Touched at {x}, {y}')
+    def touch(self, x: int, y: int) -> bool:
+        if self.connection is None:
+            raise RuntimeError("连接器尚未初始化")
+        return self.connection.touch(x, y)
 
-    def generate_position_by_normal(self, x:int, y:int, offset:int=10)->tuple:
-        '''Generate the position by normal distribution
-
-        Parameters
-        ----------
-        x : int
-            The x coordinate
-        y : int
-            The y coordinate
-        offset : int, optional
-            The offset, by default 10
-        '''
+    @staticmethod
+    def randomize_position(x: int, y: int, offset: int = 10) -> tuple[int, int]:
         return int(x + offset * np.random.normal()), int(y + offset * np.random.normal())
 
-    def find_and_touch(self, target:str):
-        '''Find and touch the target
-
-        Parameters
-        ----------
-        target : str
-            The target image file name
-        '''
-        location = self._find(target)
-        if location:
-            location = self.generate_position_by_normal(*location)
-            self._touch(*location)
-            time.sleep(0.05)
-            return True
-        else:
+    def find_and_touch(self, target: str, screenshot: str) -> bool:
+        location = self.find(target, screenshot)
+        if location is None:
             return False
-            
-class FindListRunner(Runner):
-    '''virtual class for finding a list of targets script
-    '''
-    name:str = 'FindListBase' 
-    targets:list = []
-    discription:str = 'FindListBase'
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        return self.touch(*self.randomize_position(*location))
 
-    def work(self):
-        try:
-            for target in self.targets:
-                self.find_and_touch(target)
-        except Exception as e:
-            self.logger.error(f'Error in {self.name}: {e}')
-        
+
+class FindListRunner(Runner):
+    """Find and touch the first visible target in a list."""
+
+    name = "find-list"
+    description = "模板列表任务"
+    targets: tuple[str, ...] = ()
+
+    def work(self) -> None:
+        screenshot = self.screenshot()
+        for target in self.targets:
+            if self.find_and_touch(target, screenshot):
+                break

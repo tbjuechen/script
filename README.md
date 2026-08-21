@@ -9,7 +9,7 @@
 - Windows 10/11
 - Python 3.10 或更高版本
 - 支持 TCP ADB 的模拟器或 Android 设备
-- 游戏分辨率 `1920 × 1080`
+- 推荐使用 16:9 横屏分辨率；模板基准为 `1920 × 1080`，运行时会自动适配
 
 项目默认连接 MuMu 模拟器的 `127.0.0.1:16384`。实际端口以 MuMu 多开器中显示的 ADB 端口为准。
 
@@ -24,6 +24,18 @@ python -m pip install -r requirements.txt
 ```
 
 ## 使用
+
+### 图形界面
+
+双击 `launcher.pyw`，或在虚拟环境中运行：
+
+```powershell
+python main.py --gui
+```
+
+界面支持设备检测和截图预览、任务参数设置、启动、暂停、继续、停止及实时日志。
+
+### 命令行
 
 运行默认的活动任务：
 
@@ -81,6 +93,8 @@ tests/                   离线单元测试
 
 每轮任务只获取一次设备截图，然后按任务定义的顺序查找目标；识别到第一个目标并点击后进入下一轮，避免对已经变化的界面继续使用旧截图。
 
+模板以 `1920×1080` 为基准。识别器会根据当前截图自动缩放模板，例如 MuMu 的 `1600×900` 横屏模式无需单独制作一套素材。
+
 ## 测试
 
 测试不需要启动模拟器：
@@ -97,6 +111,8 @@ python -m unittest discover -s tests -v
 python -m pip install -r requirements-dev.txt
 pyinstaller main.spec
 ```
+
+生成的 `dist/main.exe` 默认启动图形界面。
 
 ## 增加任务
 

@@ -39,13 +39,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=1.0,
         help="识别轮询间隔秒数（默认：1）",
     )
-    parser.add_argument("--gui", action="store_true", help="显示独立日志窗口")
+    parser.add_argument("--gui", action="store_true", help="启动桌面图形界面")
     parser.add_argument("--debug", action="store_true", help="输出调试日志")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.gui:
+        from gui_app import main as gui_main
+
+        gui_main()
+        return 0
     if not 0 <= args.threshold <= 1:
         raise SystemExit("--threshold 必须在 0 到 1 之间")
     if args.interval < 0:
@@ -60,7 +65,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         connector_args={"host": args.host, "port": args.port},
         player=CVPlayer(acc=args.threshold),
         time_interval=args.interval,
-        show_gui=args.gui,
     )
 
     logger.info("启动任务：{}（{}）", task_class.name, task_class.description)

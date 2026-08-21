@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 
 from main import build_parser
+from gui_app import validate_settings
 from runner.base import FindListRunner
 from runner.player import CVPlayer
 
@@ -59,7 +60,9 @@ class PlayerTests(unittest.TestCase):
             screenshot_path = Path(directory) / "screen.png"
             cv2.imwrite(str(target_path), target)
             cv2.imwrite(str(screenshot_path), screenshot)
-            location = CVPlayer(acc=0.9).locate(str(target_path), str(screenshot_path))
+            location = CVPlayer(acc=0.9, reference_size=(180, 120)).locate(
+                str(target_path), str(screenshot_path)
+            )
 
         self.assertEqual(location, (85, 50))
 
@@ -67,12 +70,44 @@ class PlayerTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             CVPlayer().load("does-not-exist.png")
 
+    def test_scales_reference_template_for_device_resolution(self) -> None:
+        rng = np.random.default_rng(7)
+        target = rng.integers(0, 256, size=(24, 36, 3), dtype=np.uint8)
+        scaled = cv2.resize(target, None, fx=5 / 6, fy=5 / 6, interpolation=cv2.INTER_AREA)
+        screenshot = np.zeros((900, 1600, 3), dtype=np.uint8)
+        height, width = scaled.shape[:2]
+        screenshot[100 : 100 + height, 200 : 200 + width] = scaled
+
+        with TemporaryDirectory() as directory:
+            target_path = Path(directory) / "target.png"
+            screenshot_path = Path(directory) / "screen.png"
+            cv2.imwrite(str(target_path), target)
+            cv2.imwrite(str(screenshot_path), screenshot)
+            location = CVPlayer(acc=0.9).locate(str(target_path), str(screenshot_path))
+
+        self.assertEqual(location, (200 + width // 2, 100 + height // 2))
+
 
 class CliTests(unittest.TestCase):
     def test_defaults(self) -> None:
         args = build_parser().parse_args([])
         self.assertEqual(args.task, "active")
         self.assertEqual(args.port, 16384)
+
+
+class GuiSettingsTests(unittest.TestCase):
+    def test_valid_settings(self) -> None:
+        settings = validate_settings("active", "127.0.0.1", "16384", "0.8", "1")
+        self.assertEqual(settings.port, 16384)
+        self.assertEqual(settings.threshold, 0.8)
+
+    def test_rejects_invalid_port(self) -> None:
+        with self.assertRaisesRegex(ValueError, "端口"):
+            validate_settings("active", "127.0.0.1", "70000", "0.8", "1")
+
+    def test_rejects_invalid_threshold(self) -> None:
+        with self.assertRaisesRegex(ValueError, "阈值"):
+            validate_settings("active", "127.0.0.1", "16384", "1.5", "1")
 
 
 if __name__ == "__main__":

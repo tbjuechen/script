@@ -22,11 +22,13 @@ class Runner(ABC, Process):
     _RUNNING = 1
     _PAUSED = 2
     _STOPPED = 3
+    _STOPPING = 4
     _STATUS_NAMES = {
         _IDLE: "idle",
         _RUNNING: "running",
         _PAUSED: "paused",
         _STOPPED: "stopped",
+        _STOPPING: "stopping",
     }
 
     def __init__(
@@ -36,6 +38,7 @@ class Runner(ABC, Process):
         player: Player | None = None,
         time_interval: float = 1.0,
         show_gui: bool = False,
+        log_queue: Any | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -47,6 +50,7 @@ class Runner(ABC, Process):
         self.player = player or CVPlayer()
         self.time_interval = time_interval
         self.show_gui = show_gui
+        self.log_queue = log_queue
 
         self._status = Value("i", self._IDLE)
         self.pause_event = Event()
@@ -78,7 +82,15 @@ class Runner(ABC, Process):
 
     def run(self) -> None:
         gui = None
+        log_sink_id = None
         try:
+            if self.log_queue is not None:
+                log_sink_id = logger.add(
+                    lambda message: self.log_queue.put(str(message)),
+                    level="DEBUG",
+                    colorize=False,
+                    format="{time:HH:mm:ss} | {level: <8} | {message}",
+                )
             self._initialize()
             assert self.connection is not None
             if not self.connection.connect():
@@ -111,6 +123,8 @@ class Runner(ABC, Process):
                 self.connection.disconnect()
             if gui is not None:
                 gui.stop()
+            if log_sink_id is not None:
+                logger.remove(log_sink_id)
             self._set_status(self._STOPPED)
             logger.info("任务 {} 已停止", self.name)
 
@@ -127,7 +141,7 @@ class Runner(ABC, Process):
         self.pause_event.set()
 
     def stop(self) -> None:
-        self._set_status(self._STOPPED)
+        self._set_status(self._STOPPING)
         self.stop_event.set()
         self.pause_event.set()
 

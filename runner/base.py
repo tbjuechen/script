@@ -10,6 +10,7 @@ import numpy as np
 
 from .connector import Connector
 from .player import CVPlayer, Player
+from .power import keep_awake
 
 
 class Runner(ABC, Process):
@@ -106,6 +107,7 @@ class Runner(ABC, Process):
                 gui.start()
 
             self._set_status(self._RUNNING)
+            keep_awake(True)
             logger.info("任务 {} 已启动", self.name)
             while not self.stop_event.is_set():
                 self.pause_event.wait()
@@ -119,6 +121,7 @@ class Runner(ABC, Process):
             logger.exception("任务 {} 异常退出", self.name)
             raise
         finally:
+            keep_awake(False)
             if self.connection is not None:
                 self.connection.disconnect()
             if gui is not None:
